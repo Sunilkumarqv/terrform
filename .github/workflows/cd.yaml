@@ -11,7 +11,7 @@ on:
 
 env:
   working_directory: "src/terraform"
-  application: "application-name"
+  application: "azure_config"
   environment: "dev"
 
 jobs:
