@@ -1,16 +1,10 @@
-terraform {
-  required_providers {
-    azurerm = {
-      source  = "hashicorp/azurerm"
-      version = "~> 3.0"
-    }
-  }
+# Create a random name for the resource group using random_pet
+resource "random_pet" "rg_name" {
+  prefix = var.resource_group_name_prefix
 }
 
-provider "azurerm" {
-  features {}
-}
+# Create a resource group using the generated random name
 resource "azurerm_resource_group" "example" {
-  name     = "example-resources"
-  location = "West Europe"
+  location = var.resource_group_location
+  name     = random_pet.rg_name.id
 }
