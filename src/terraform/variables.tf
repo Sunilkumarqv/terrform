@@ -16,3 +16,18 @@ variable "resource_group_name_prefix" {
   default     = "rg"
   description = "Prefix of the resource group name that's combined with a random ID so name is unique in your Azure subscription."
 }
+
+variable "storage_account_name" {
+  description = "The name of the storage account"
+  type        = string
+}
+
+variable "container_name" {
+  description = "The name of the storage container"
+  type        = string
+}
+
+variable "environment" {
+  description = "The environment name (e.g., dev, prod)"
+  type        = string
+}
