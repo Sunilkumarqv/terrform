@@ -15,8 +15,8 @@ module "adls" {
 
 module "databricks" {
   source                = "./modules/databricks"
-  resource_group_name   = azurerm_resource_group.rg.name
-  location              = azurerm_resource_group.rg.location
+  resource_group_name   = var.resource_group_name.rg.name
+  location              = var.resource_group_name.rg.location
   workspace_name        = var.databricks_workspace_name
   environment           = var.environment
 }
