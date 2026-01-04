@@ -12,3 +12,10 @@ module "adls" {
   container_name        = var.container_name
   environment           = var.environment
 }
+module "databricks" {
+  source                = "./modules/databricks"
+  resource_group_name   = azurerm_resource_group.rg.name
+  location              = azurerm_resource_group.rg.location
+  workspace_name        = var.databricks_workspace_name
+  environment           = var.environment
+}
