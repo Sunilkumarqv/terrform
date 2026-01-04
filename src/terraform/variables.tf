@@ -7,7 +7,7 @@ variable "resource_group_location" {
 
 variable "resource_group_name" {
   type        = string
-  default     = "rg-retail-001"
+  default     = "rg-retail-002"
   description = "Name of the resource group."  
 }
 
