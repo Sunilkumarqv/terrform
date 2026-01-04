@@ -18,7 +18,7 @@ variable "environment" {
   type        = string
 }
 
-variable "adls_container_name" {
+variable "container_name" {
   description = "Name of the ADLS container"
   type        = string
 }
