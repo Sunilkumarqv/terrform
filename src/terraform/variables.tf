@@ -31,3 +31,8 @@ variable "environment" {
   description = "The environment name (e.g., dev, prod)"
   type        = string
 }
+
+variable "databricks_workspace_name" {
+  description = "The name of the Databricks workspace"
+  type        = string
+}
