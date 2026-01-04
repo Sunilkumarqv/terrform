@@ -19,7 +19,7 @@ resource "azurerm_storage_container" "bronze" {
 }
 
 resource "azurerm_storage_container" "silver" {
-  name                  = "${var.container_name}-silver"
+  name                  = "silver"
   storage_account_id    = azurerm_storage_account.adls.id
   container_access_type = "private"
 }
