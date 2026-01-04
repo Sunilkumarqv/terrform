@@ -1,7 +1,7 @@
 resource "azurerm_databricks_workspace" "db" {
-  name                = "${var.prefix}-databricks-ws"
-  resource_group_name = var.resource_group_name.db.name
-  location            = var.location.db.name
+  name                = var.databricks_workspace_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
   sku                 = "premium"
 
   tags = {
