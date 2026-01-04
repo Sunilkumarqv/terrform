@@ -7,10 +7,9 @@ on:
     paths:
       - 'src/terraform/**'
       - '.github/workflows/**'
+      - '!src/terraform/modules/databricks/**'
       - '!src/terraform/modules/data_factory/**'
       - '!src/terraform/modules/key_vault/**'
-      - '!src/terraform/modules/databricks/**'
-
   workflow_dispatch:
 
 env:
