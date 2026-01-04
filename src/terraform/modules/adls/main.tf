@@ -1,5 +1,5 @@
 resource "azurerm_storage_account" "adls" {
-  name                     = var.adls_storage_account_name
+  name                     = var.storage_account_name
   resource_group_name      = var.resource_group_name
   location                 = var.location
   account_tier             = "Standard"
@@ -13,13 +13,13 @@ resource "azurerm_storage_account" "adls" {
 }
 
 resource "azurerm_storage_container" "bronze" {
-  name                  = var.adls_container_name
+  name                  = var.container_name
   storage_account_id    = azurerm_storage_account.adls.id
   container_access_type = "private"
 }
 
 resource "azurerm_storage_container" "silver" {
-  name                  = var.adls_container_name_silver
+  name                  = "${var.container_name}-silver"
   storage_account_id    = azurerm_storage_account.adls.id
   container_access_type = "private"
 }
