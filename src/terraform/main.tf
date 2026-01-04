@@ -5,9 +5,10 @@ resource "azurerm_resource_group" "rg" {
 } 
 
 module "adls" {
-  source                       = "./modules/adls"
-  resource_group_name          = azurerm_resource_group.rg.name
-  location                     = azurerm_resource_group.rg.location
-  adls_storage_account_name    = var.adls_storage_account_name
-  adls_container_name          = var.adls_container_name
+  source                = "./modules/adls"
+  resource_group_name   = azurerm_resource_group.rg.name
+  location              = azurerm_resource_group.rg.location
+  storage_account_name  = var.storage_account_name
+  container_name        = var.container_name
+  environment           = var.environment
 }
