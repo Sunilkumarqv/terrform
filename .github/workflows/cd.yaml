@@ -6,7 +6,10 @@ on:
       - main
     paths:
       - 'src/terraform/**'
-      - 'modules/**'
+      - 'modules/adls/*'
+      - 'modules/data_factory/*'  
+      - 'modules/key_vault/*'
+      - 'modules/databricks/*'
       - '.github/workflows/**'
   workflow_dispatch:
 
