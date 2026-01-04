@@ -1,11 +1,13 @@
-# Create a random name for the resource group using random_pet
-# resource "random_pet" "rg_name" {
-#   prefix = var.resource_group_name_prefix
-# }
-
 # Create a resource group using the generated random name
-resource "azurerm_resource_group" "example" {
+resource "azurerm_resource_group" "rg" {
   location = var.resource_group_location
-  #name     = random_pet.rg_name.id
   name     = var.resource_group_name
 } 
+
+module "adls_storage" {
+  source                       = "../modules/adls"
+  resource_group_name          = azurerm_resource_group.rg.name
+  location                     = azurerm_resource_group.rg.location
+  adls_storage_account_name    = var.adls_storage_account_name
+  adls_container_name          = var.adls_container_name
+}
