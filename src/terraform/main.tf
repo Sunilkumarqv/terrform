@@ -19,4 +19,4 @@ module "adls" {
   location                    = azurerm_resource_group.rg.location
   sku                         = "standard"
   managed_resource_group_name = "${var.databricks_workspace_name}-managed-rg"
- }
+}
