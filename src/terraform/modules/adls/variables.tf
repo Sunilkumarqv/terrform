@@ -17,3 +17,13 @@ variable "environment" {
   description = "Environment tag value"
   type        = string
 }
+
+variable "adls_container_name" {
+  description = "Name of the ADLS container"
+  type        = string
+}
+
+variable "adls_storage_account_name" {
+  description = "Name of the ADLS storage account"
+  type        = string
+}
