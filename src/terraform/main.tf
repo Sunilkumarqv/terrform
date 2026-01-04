@@ -13,10 +13,10 @@ module "adls" {
   environment           = var.environment
 }
 
-module "databricks" {
-  source                = "./modules/databricks"
-  resource_group_name   = var.resource_group_name.rg.name
-  location              = var.resource_group_name.rg.location
-  workspace_name        = var.databricks_workspace_name
-  environment           = var.environment
-}
+ resource "azurerm_databricks_workspace" "databricks" {
+  name                        = var.databricks_workspace_name
+  resource_group_name         = azurerm_resource_group.rg.name
+  location                    = azurerm_resource_group.rg.location
+  sku                         = "standard"
+  managed_resource_group_name = "${var.databricks_workspace_name}-managed-rg"
+  
