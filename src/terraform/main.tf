@@ -4,8 +4,8 @@ resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name
 } 
 
-module "adls_storage" {
-  source                       = "../modules/adls"
+module "adls" {
+  source                       = "./modules/adls"
   resource_group_name          = azurerm_resource_group.rg.name
   location                     = azurerm_resource_group.rg.location
   adls_storage_account_name    = var.adls_storage_account_name
