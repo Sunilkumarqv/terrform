@@ -18,7 +18,7 @@ jobs:
           sudo apt-get update -y && sudo apt-get install -y jq
           curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
           databricks -v
-          cat > "$HOME/.databrickscfg" <<'EOF'
+          cat > "$HOME/.databrickscfg" <<EOF
           [DEFAULT]
           host = ${DATABRICKS_HOST}
           token = ${DATABRICKS_TOKEN}
