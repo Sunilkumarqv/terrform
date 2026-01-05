@@ -30,4 +30,6 @@ jobs:
 
       - name: Trigger Notebook Run
         run: |
-           databricks jobs run-now --name "CI/CD Notebook Job"
+           JOB_ID=$(databricks jobs list --output JSON | jq -r '.jobs[] | select(.settings.name=="CICD_Notebook_Job") | .job_id')
+           databricks jobs run-now --job-id "$JOB_ID"
+
