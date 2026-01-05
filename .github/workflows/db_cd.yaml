@@ -20,8 +20,7 @@ jobs:
       - name: Install Databricks CLI
         run: |
           pip install --upgrade databricks-cli
-          databricks jobs configure --version 2.1
-
+          
       - name: Configure Databricks CLI
         run: |
           databricks configure --token <<EOF
@@ -31,6 +30,4 @@ jobs:
 
       - name: Trigger Notebook Run
         run: |
-          JOB_ID=$(databricks jobs list --output JSON | jq '.jobs[] | select(.settings.name=="CI/CD Notebook Job") | .job_id')
-          RUN_ID=$(databricks jobs run-now --job-id "$JOB_ID" --output JSON | jq -r '.run_id')
-          echo "Notebook run triggered, ID: $RUN_ID"
+           databricks jobs run-now --name "CI/CD Notebook Job"
