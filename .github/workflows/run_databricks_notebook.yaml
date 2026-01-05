@@ -1,4 +1,4 @@
-name: Run Databricks Notebook
+name: Run Databricks Notebook (New CLI)
 
 on:
   workflow_dispatch:
@@ -22,16 +22,15 @@ jobs:
         with:
           python-version: '3.8'
 
-      - name: Install Latest Databricks CLI
+      - name: Install New Databricks CLI and jq
         run: |
           sudo apt-get update -y
           sudo apt-get install -y jq
           python3 -m pip install --upgrade pip
-          python3 -m pip uninstall -y databricks-cli || true
-          python3 -m pip install "databricks-cli>=0.220.0"
-          databricks --version
+          python3 -m pip install nutter
+          python3 -m pip install databricks
 
-      - name: Configure CLI & Run Notebook Job
+      - name: Create & Run Databricks Notebook
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
@@ -40,11 +39,8 @@ jobs:
           export DATABRICKS_HOST=${DATABRICKS_HOST}
           export DATABRICKS_TOKEN=${DATABRICKS_TOKEN}
 
-          echo "🔄 Switching CLI to Jobs API v2.1..."
-          databricks jobs configure --version=2.1
-
-          echo "🚀 Creating Databricks job using API v2.1..."
-          RESPONSE=$(databricks jobs create --json-file src/databricks/job_config.json)
+          echo "🚀 Creating Databricks job using new CLI..."
+          RESPONSE=$(databricks jobs create --json src/databricks/job_config.json)
           echo "Response: $RESPONSE"
 
           JOB_ID=$(echo "$RESPONSE" | jq -r '.job_id')
