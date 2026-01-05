@@ -20,6 +20,7 @@ jobs:
       - name: Install Databricks CLI
         run: |
           pip install --upgrade databricks-cli
+          databricks jobs configure --version=2.1
           
       - name: Configure Databricks CLI
         run: |
@@ -30,6 +31,9 @@ jobs:
 
       - name: Trigger Notebook Run
         run: |
-           JOB_ID=$(databricks jobs list --output JSON | jq -r '.jobs[] | select(.settings.name=="CICD_Notebook_Job") | .job_id')
-           databricks jobs run-now --job-id "$JOB_ID"
-
+           JOB_ID=$(databricks jobs list --output JSON 2>/dev/null | grep -v '^WARN' | jq -r '.jobs[] | select(.settings.name=="CICD_Notebook_Job") | .job_id')
+              if [ -z "$JOB_ID" ]; then
+                 echo "Job not found!"
+                 exit 1
+              fi
+              run_id=$(databricks jobs run-now --job-id $JOB_ID --output JSON 2>/dev/null | grep -v '^WARN' | jq -r '.run_id')
