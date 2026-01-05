@@ -33,19 +33,8 @@ jobs:
           python3 -m pip install nutter
           python3 -m pip install --upgrade databricks-cli
 
-      # 4. Configure CLI for Jobs API v2.1 (non-interactive)
-      - name: Configure Databricks CLI to v2.1
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
-        run: |
-          export DATABRICKS_HOST=${DATABRICKS_HOST}
-          export DATABRICKS_TOKEN=${DATABRICKS_TOKEN}
-          echo "Upgrading Databricks Jobs API CLI to version 2.1..."
-          databricks jobs configure --version=2.1
-
-      # 5. Create and Run Notebook Job
-      - name: Create & Run Databricks Notebook
+      # 4. Configure CLI + Create & Run Notebook Job (same shell to persist API version 2.1)
+      - name: Configure CLI v2.1 + Create & Run Databricks Notebook
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
@@ -54,7 +43,10 @@ jobs:
           export DATABRICKS_HOST=${DATABRICKS_HOST}
           export DATABRICKS_TOKEN=${DATABRICKS_TOKEN}
 
-          echo "Creating Databricks job from job_config.json..."
+          echo "🔄 Switching Databricks CLI to Jobs API v2.1..."
+          databricks jobs configure --version=2.1
+
+          echo "🚀 Creating Databricks job from job_config.json..."
           RESPONSE=$(databricks jobs create --json-file src/databricks/job_config.json)
           echo "API Response: $RESPONSE"
 
@@ -63,17 +55,17 @@ jobs:
             echo "❌ Failed to create job. See API response above."
             exit 1
           fi
-          echo "Job created with ID: $JOB_ID"
+          echo "✅ Job created with ID: $JOB_ID"
 
-          echo "Triggering job run..."
+          echo "▶ Triggering job run..."
           RUN_ID=$(databricks jobs run-now --job-id $JOB_ID | jq -r '.run_id')
           if [ "$RUN_ID" == "null" ] || [ -z "$RUN_ID" ]; then
             echo "❌ Failed to start job run."
             exit 1
           fi
-          echo "Run ID: $RUN_ID"
+          echo "📌 Run ID: $RUN_ID"
 
-          echo "Waiting for job completion..."
+          echo "⏳ Waiting for job completion..."
           while true; do
             STATUS=$(databricks runs get --run-id $RUN_ID | jq -r '.state.life_cycle_state')
             RESULT_STATE=$(databricks runs get --run-id $RUN_ID | jq -r '.state.result_state')
@@ -87,7 +79,7 @@ jobs:
                 exit 1
               fi
             else
-              echo "⏳ Current job status: $STATUS... waiting 30s"
+              echo "🔄 Current job status: $STATUS... waiting 30s"
               sleep 30
             fi
           done
