@@ -1,0 +1,34 @@
+name: Run Databricks Notebook
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/databricks/**'
+      - '.github/workflows/db_cd.yaml'
+
+jobs:
+  run-notebook:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Install Databricks CLI
+        run: pip install databricks-cli jq
+
+      - name: Configure Databricks CLI
+        run: |
+          databricks configure --token <<EOF
+          https://${{ secrets.DATABRICKS_HOST }}
+          ${{ secrets.DATABRICKS_TOKEN }}
+          EOF
+
+      - name: Trigger Notebook Run
+        run: |
+          JOB_ID=$(databricks jobs list --output JSON | jq '.jobs[] | select(.settings.name=="CI/CD Notebook Job") | .job_id')
+          RUN_ID=$(databricks jobs run-now --job-id "$JOB_ID" --output JSON | jq -r '.run_id')
+          echo "Notebook run triggered, ID: $RUN_ID"
