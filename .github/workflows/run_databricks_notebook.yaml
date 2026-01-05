@@ -1,65 +1,68 @@
-name: Run Databricks Notebook
-# This GitHub Actions workflow creates and runs a Databricks notebook job
-# using the new Databricks CLI (Jobs API v2.1)
+
+name: Run Azure Databricks Notebook (Serverless)
 
 on:
-  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+  workflow_dispatch:
 
 jobs:
   run-notebook:
-    runs-on: ubuntu-latest # Use latest Ubuntu runner
-
+    runs-on: ubuntu-latest
     steps:
-      # Step 1: Checkout the repository code
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # Step 2: Install jq (for JSON parsing) and the NEW Databricks CLI
-      - name: Install jq & Databricks CLI
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq # jq lets us extract fields from JSON output
-
-          # Remove any old Python-based CLI (databricks-cli) so it won't interfere
-          pip uninstall -y databricks-cli || true
-          sudo apt-get remove -y databricks-cli || true
-
-          # Install the NEW standalone Databricks CLI (v2), which defaults to Jobs API v2.1
-          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-
-          # Verify CLI version installed
-          databricks -v
-
-      # Step 3: Create the Databricks job from job_config.json, run it, and wait for completion
-      - name: Create & Run Notebook Job
+      - name: Install Databricks CLI & jq
         env:
-          # These environment variables are set from GitHub Secrets:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}   # e.g. https://your-workspace.cloud.databricks.com
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }} # Personal Access Token
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          # Create job from the JSON config file in the repo
-          JOB_ID=$(databricks jobs create --json "$(cat src/databricks/job_config.json)" | jq -r '.job_id')
-          echo "Created Job ID: $JOB_ID"
+          sudo apt-get update -y && sudo apt-get install -y jq
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          databricks -v
+          cat > "$HOME/.databrickscfg" <<'EOF'
+          [DEFAULT]
+          host = ${DATABRICKS_HOST}
+          token = ${DATABRICKS_TOKEN}
+          EOF
 
-          # Trigger a run for that job
-          RUN_ID=$(databricks jobs run-now --job-id "$JOB_ID" | jq -r '.run_id')
-          echo "Started Run ID: $RUN_ID"
+      - name: Run Notebook Job (Serverless)
+        run: |
+          NB_PATH="/Workspace/Users/sunilkumarqv@gmail.com/databricks/src/databricks/retails_nb"
 
-          # Poll until the job run finishes (TERMINATED)
+          cat > job.json <<JSON
+          {
+            "name": "GH Actions - Serverless Notebook",
+            "format": "MULTI_TASK",
+            "tasks": [
+              {
+                "task_key": "run_nb",
+                "notebook_task": {
+                  "notebook_path": "${NB_PATH}",
+                  "source": "WORKSPACE"
+                }
+              }
+            ]
+          }
+          JSON
+
+          CREATE_OUT=$(databricks jobs create --json @job.json -o json)
+          JOB_ID=$(echo "$CREATE_OUT" | jq -r '.job_id')
+
+          RUN_OUT=$(databricks jobs run-now "$JOB_ID" -o json)
+          RUN_ID=$(echo "$RUN_OUT" | jq -r '.run_id')
+
           while true; do
-            STATUS=$(databricks runs get --run-id "$RUN_ID" | jq -r '.state.life_cycle_state')
-            RESULT_STATE=$(databricks runs get --run-id "$RUN_ID" | jq -r '.state.result_state')
+            OUT=$(databricks jobs get-run "$RUN_ID" -o json)
+            STATUS=$(echo "$OUT" | jq -r '.state.life_cycle_state')
+            RESULT=$(echo "$OUT" | jq -r '.state.result_state')
+            URL=$(echo "$OUT" | jq -r '.run_page_url // empty')
 
             if [ "$STATUS" = "TERMINATED" ]; then
-              if [ "$RESULT_STATE" = "SUCCESS" ]; then
-                echo "✅ Notebook completed successfully."
-                exit 0
-              else
-                echo "❌ Notebook failed: $RESULT_STATE"
-                exit 1
-              fi
-            else
-              echo "⏳ Status: $STATUS"
-              sleep 30 # Wait before checking status again
+              echo "Run finished: $RESULT"
+              [ -n "$URL" ] && echo "Run URL: $URL"
+              break
             fi
+            echo "Status: $STATUS"
+            sleep 20
           done
+
+          databricks jobs delete "$JOB_ID"
