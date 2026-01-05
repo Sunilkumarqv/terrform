@@ -1,72 +1,57 @@
-name: Run Databricks Notebook (New CLI)
+name: Run Databricks Notebook
+# This GitHub Actions workflow creates and runs a Databricks notebook job
+# using the new Databricks CLI (Jobs API v2.1)
 
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - 'src/databricks/**'
-      - '.github/workflows/run_databricks_notebook.yaml'
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
 
 jobs:
   run-notebook:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Use latest Ubuntu runner
 
     steps:
+      # Step 1: Checkout the repository code
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.8'
-
-      - name: Install New Databricks CLI and jq
+      # Step 2: Install jq (for JSON parsing) and the NEW Databricks CLI
+      - name: Install jq & Databricks CLI
         run: |
+          sudo apt-get update
+          sudo apt-get install -y jq # jq lets us extract fields from JSON output
+
+          # Remove any old Python-based CLI (databricks-cli) so it won't interfere
           pip uninstall -y databricks-cli || true
           sudo apt-get remove -y databricks-cli || true
-          pip install --upgrade pip
-          pip install databricks
-          python3 -m databricks --version
-          winget upgrade Databricks.DatabricksCLI
-          databricks version
 
-      - name: Create & Run Databricks Notebook
+          # Install the NEW standalone Databricks CLI (v2), which defaults to Jobs API v2.1
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+
+          # Verify CLI version installed
+          databricks -v
+
+      # Step 3: Create the Databricks job from job_config.json, run it, and wait for completion
+      - name: Create & Run Notebook Job
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          # These environment variables are set from GitHub Secrets:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}   # e.g. https://your-workspace.cloud.databricks.com
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }} # Personal Access Token
         run: |
-          set -e
-          export DATABRICKS_HOST=${DATABRICKS_HOST}
-          export DATABRICKS_TOKEN=${DATABRICKS_TOKEN}
+          # Create job from the JSON config file in the repo
+          JOB_ID=$(databricks jobs create --json "$(cat src/databricks/job_config.json)" | jq -r '.job_id')
+          echo "Created Job ID: $JOB_ID"
 
-          echo "🚀 Creating Databricks job using new CLI..."
-          RESPONSE=$(databricks jobs create --json src/databricks/job_config.json)
-          echo "Response: $RESPONSE"
+          # Trigger a run for that job
+          RUN_ID=$(databricks jobs run-now --job-id "$JOB_ID" | jq -r '.run_id')
+          echo "Started Run ID: $RUN_ID"
 
-          JOB_ID=$(echo "$RESPONSE" | jq -r '.job_id')
-          if [ -z "$JOB_ID" ] || [ "$JOB_ID" == "null" ]; then
-            echo "❌ Failed to create job."
-            exit 1
-          fi
-          echo "Job ID: $JOB_ID"
-
-          echo "▶ Triggering job run..."
-          RUN_ID=$(databricks jobs run-now --job-id $JOB_ID | jq -r '.run_id')
-          if [ -z "$RUN_ID" ] || [ "$RUN_ID" == "null" ]; then
-            echo "❌ Failed to start job run."
-            exit 1
-          fi
-          echo "Run ID: $RUN_ID"
-
-          echo "⏳ Waiting for job completion..."
+          # Poll until the job run finishes (TERMINATED)
           while true; do
-            STATUS=$(databricks runs get --run-id $RUN_ID | jq -r '.state.life_cycle_state')
-            RESULT_STATE=$(databricks runs get --run-id $RUN_ID | jq -r '.state.result_state')
+            STATUS=$(databricks runs get --run-id "$RUN_ID" | jq -r '.state.life_cycle_state')
+            RESULT_STATE=$(databricks runs get --run-id "$RUN_ID" | jq -r '.state.result_state')
 
-            if [ "$STATUS" == "TERMINATED" ]; then
-              if [ "$RESULT_STATE" == "SUCCESS" ]; then
+            if [ "$STATUS" = "TERMINATED" ]; then
+              if [ "$RESULT_STATE" = "SUCCESS" ]; then
                 echo "✅ Notebook completed successfully."
                 exit 0
               else
@@ -74,7 +59,7 @@ jobs:
                 exit 1
               fi
             else
-              echo "Still running... Status: $STATUS"
-              sleep 30
+              echo "⏳ Status: $STATUS"
+              sleep 30 # Wait before checking status again
             fi
           done
