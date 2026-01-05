@@ -7,7 +7,7 @@ on:
       - main
     paths:
       - 'src/databricks/**'
-      - '.github/workflows/db_cd.yaml'
+      - '.github/workflows/run_databricks_notebook.yaml'
 
 jobs:
   run-notebook:
@@ -29,47 +29,65 @@ jobs:
         run: |
           sudo apt-get update -y
           sudo apt-get install -y jq
+          python3 -m pip install --upgrade pip
+          python3 -m pip install nutter
           python3 -m pip install --upgrade databricks-cli
-        
-      - name: Configure Databricks CLI Version to v2.1
+
+      # 4. Configure CLI for Jobs API v2.1 (non-interactive)
+      - name: Configure Databricks CLI to v2.1
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           export DATABRICKS_HOST=${DATABRICKS_HOST}
           export DATABRICKS_TOKEN=${DATABRICKS_TOKEN}
-          echo "Upgrading Databricks Jobs API to version 2.1..."
+          echo "Upgrading Databricks Jobs API CLI to version 2.1..."
           databricks jobs configure --version=2.1
 
-      # 4. Run Databricks Job (Non-interactive)
-      - name: Run Databricks Notebook via Job API
+      # 5. Create and Run Notebook Job
+      - name: Create & Run Databricks Notebook
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          echo "Creating Databricks job..."
-          JOB_ID=$(databricks jobs create --json-file src/databricks/job_config.json | jq -r '.job_id')
+          set -e
+          export DATABRICKS_HOST=${DATABRICKS_HOST}
+          export DATABRICKS_TOKEN=${DATABRICKS_TOKEN}
+
+          echo "Creating Databricks job from job_config.json..."
+          RESPONSE=$(databricks jobs create --json-file src/databricks/job_config.json)
+          echo "API Response: $RESPONSE"
+
+          JOB_ID=$(echo "$RESPONSE" | jq -r '.job_id')
+          if [ "$JOB_ID" == "null" ] || [ -z "$JOB_ID" ]; then
+            echo "❌ Failed to create job. See API response above."
+            exit 1
+          fi
           echo "Job created with ID: $JOB_ID"
 
-          echo "Triggering job..."
+          echo "Triggering job run..."
           RUN_ID=$(databricks jobs run-now --job-id $JOB_ID | jq -r '.run_id')
-          echo "Job run ID: $RUN_ID"
+          if [ "$RUN_ID" == "null" ] || [ -z "$RUN_ID" ]; then
+            echo "❌ Failed to start job run."
+            exit 1
+          fi
+          echo "Run ID: $RUN_ID"
 
-          echo "Waiting for job to complete..."
+          echo "Waiting for job completion..."
           while true; do
             STATUS=$(databricks runs get --run-id $RUN_ID | jq -r '.state.life_cycle_state')
             RESULT_STATE=$(databricks runs get --run-id $RUN_ID | jq -r '.state.result_state')
-            
+
             if [ "$STATUS" == "TERMINATED" ]; then
               if [ "$RESULT_STATE" == "SUCCESS" ]; then
-                echo "✅ Job completed successfully."
+                echo "✅ Notebook job completed successfully."
                 exit 0
               else
-                echo "❌ Job failed with result state: $RESULT_STATE"
+                echo "❌ Notebook job failed with result state: $RESULT_STATE"
                 exit 1
               fi
             else
-              echo "⏳ Current job status: $STATUS. Waiting..."
+              echo "⏳ Current job status: $STATUS... waiting 30s"
               sleep 30
             fi
           done

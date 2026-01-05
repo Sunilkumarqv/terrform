@@ -1,7 +1,7 @@
 {
   "name": "Run Databricks Notebook using SQL Warehouse",
   "notebook_task": {
-    "notebook_path": "/Workspace/Users/sunilkumarqv@gmail.com/databricks/src/databricks/retails_nb",
+    "notebook_path": "src/databricks/retails_nb",
     "base_parameters": {
       "param1": "value1"
     }
