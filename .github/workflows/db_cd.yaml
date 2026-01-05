@@ -19,7 +19,8 @@ jobs:
 
       - name: Install Databricks CLI
         run: |
-          pip install --upgrade databricks-cli
+          pip install databricks-cli
+          pip install databricks-cli --upgrade
           databricks jobs configure --version=2.1
           
       - name: Configure Databricks CLI
