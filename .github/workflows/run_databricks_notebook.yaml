@@ -24,11 +24,13 @@ jobs:
 
       - name: Install New Databricks CLI and jq
         run: |
-          sudo apt-get update -y
-          sudo apt-get install -y jq
-          python3 -m pip install --upgrade pip
-          python3 -m pip install nutter
-          python3 -m pip install databricks
+          pip uninstall -y databricks-cli || true
+          sudo apt-get remove -y databricks-cli || true
+          pip install --upgrade pip
+          pip install databricks
+          python3 -m databricks --version
+          winget upgrade Databricks.DatabricksCLI
+          databricks version
 
       - name: Create & Run Databricks Notebook
         env:
