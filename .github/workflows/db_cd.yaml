@@ -14,52 +14,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2. Set up Python
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: '3.8'
 
+      # 3. Install Databricks CLI and jq
       - name: Install Databricks CLI and jq
         run: |
           sudo apt-get update -y
           sudo apt-get install -y jq
           python3 -m pip install --upgrade databricks-cli
 
-      - name: Configure Databricks CLI
+      # 4. Run Databricks Job (Non-interactive)
+      - name: Run Databricks Notebook via Job API
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
           DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
-          databricks configure --token <<EOF
-          ${DATABRICKS_HOST}
-          ${DATABRICKS_TOKEN}
-          EOF
-
-      - name: Run Databricks Notebook
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }} 
-        run: |
+          echo "Creating Databricks job..."
           JOB_ID=$(databricks jobs create --json-file src/databricks/job_config.json | jq -r '.job_id')
+          echo "Job created with ID: $JOB_ID"
+
+          echo "Triggering job..."
           RUN_ID=$(databricks jobs run-now --job-id $JOB_ID | jq -r '.run_id')
+          echo "Job run ID: $RUN_ID"
 
           echo "Waiting for job to complete..."
           while true; do
             STATUS=$(databricks runs get --run-id $RUN_ID | jq -r '.state.life_cycle_state')
+            RESULT_STATE=$(databricks runs get --run-id $RUN_ID | jq -r '.state.result_state')
+            
             if [ "$STATUS" == "TERMINATED" ]; then
-              RESULT_STATE=$(databricks runs get --run-id $RUN_ID | jq -r '.state.result_state')
               if [ "$RESULT_STATE" == "SUCCESS" ]; then
-                echo "Job completed successfully."
+                echo "✅ Job completed successfully."
                 exit 0
               else
-                echo "Job failed with result state: $RESULT_STATE"
+                echo "❌ Job failed with result state: $RESULT_STATE"
                 exit 1
               fi
             else
-              echo "Current job status: $STATUS. Waiting..."
+              echo "⏳ Current job status: $STATUS. Waiting..."
               sleep 30
             fi
-          done  
+          done
