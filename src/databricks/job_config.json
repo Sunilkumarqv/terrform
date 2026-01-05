@@ -1,0 +1,12 @@
+{
+  "name": "Run Databricks Notebook using SQL Warehouse",
+  "notebook_task": {
+    "notebook_path": "/Workspace/Users/sunilkumarqv@gmail.com/databricks/src/databricks/retails_nb",
+    "base_parameters": {
+      "param1": "value1"
+    }
+  },
+  "existing_cluster_id": "40dce1ee5722c445",
+  "max_retries": 1,
+  "timeout_seconds": 1800
+}

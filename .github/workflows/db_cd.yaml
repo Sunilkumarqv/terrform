@@ -14,27 +14,52 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install Databricks CLI
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Install Databricks CLI and jq
         run: |
-          pip install databricks-cli
-          pip install databricks-cli --upgrade
-          databricks jobs configure --version=2.1
-          
+          sudo apt-get update -y
+          sudo apt-get install -y jq
+          python3 -m pip install --upgrade databricks-cli
+
       - name: Configure Databricks CLI
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
         run: |
           databricks configure --token <<EOF
-          https://${{ secrets.DATABRICKS_HOST }}
-          ${{ secrets.DATABRICKS_TOKEN }}
+          ${DATABRICKS_HOST}
+          ${DATABRICKS_TOKEN}
           EOF
 
-      - name: Trigger Notebook Run
+      - name: Run Databricks Notebook
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }} 
         run: |
-           JOB_ID=$(databricks jobs list --output JSON 2>/dev/null | grep -v '^WARN' | jq -r '.jobs[] | select(.settings.name=="CICD_Notebook_Job") | .job_id')
-              if [ -z "$JOB_ID" ]; then
-                 echo "Job not found!"
-                 exit 1
+          JOB_ID=$(databricks jobs create --json-file src/databricks/job_config.json | jq -r '.job_id')
+          RUN_ID=$(databricks jobs run-now --job-id $JOB_ID | jq -r '.run_id')
+
+          echo "Waiting for job to complete..."
+          while true; do
+            STATUS=$(databricks runs get --run-id $RUN_ID | jq -r '.state.life_cycle_state')
+            if [ "$STATUS" == "TERMINATED" ]; then
+              RESULT_STATE=$(databricks runs get --run-id $RUN_ID | jq -r '.state.result_state')
+              if [ "$RESULT_STATE" == "SUCCESS" ]; then
+                echo "Job completed successfully."
+                exit 0
+              else
+                echo "Job failed with result state: $RESULT_STATE"
+                exit 1
               fi
-              run_id=$(databricks jobs run-now --job-id $JOB_ID --output JSON 2>/dev/null | grep -v '^WARN' | jq -r '.run_id')
+            else
+              echo "Current job status: $STATUS. Waiting..."
+              sleep 30
+            fi
+          done  
