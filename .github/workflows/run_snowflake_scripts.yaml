@@ -1,5 +1,5 @@
+name: "Install Snowflake CLI"
 
-name : "install snowflake CLI"
 on:
   push:
     branches:
@@ -10,26 +10,44 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+
+env:
+  working_directory: "src/snowflake"
+  application: "azure_config"
+  environment: "dev"
+
 jobs:
   install_snowflake_cli:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Install Snowflake CLI
         run: |
           curl -o- https://raw.githubusercontent.com/snowflakedb/snowflake-cli/main/install.sh | bash
-      - name: Verify Installation
-        run: |
-          snowsql --version
+
       - name: Add Snowflake CLI to PATH
         run: |
           echo "$HOME/.snowflake/bin" >> $GITHUB_PATH
+
+      - name: Verify Installation
+        run: |
+          snowsql --version
+
       - name: Confirm Snowflake CLI in PATH
         run: |
           which snowsql
-      - name: Run a sample Snowflake command
+
+      - name: Test Snowflake Connection
         env:
           SNOWSQL_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWSQL_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWSQL_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
         run: |
-          snowsql -a $SNOWSQL_ACCOUNT -u $SNOWSQL_USER -p $SNOWSQL_PASSWORD -q "SELECT CURRENT_VERSION();"  
+          snowsql \
+            -a $SNOWSQL_ACCOUNT \
+            -u $SNOWSQL_USER \
+            -p $SNOWSQL_PASSWORD \
+            -q "SELECT CURRENT_VERSION();"
