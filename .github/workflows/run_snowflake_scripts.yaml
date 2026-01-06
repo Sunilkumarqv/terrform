@@ -21,51 +21,21 @@ jobs:
   install_snowflake_cli:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout 
         uses: actions/checkout@v4
 
-      - name: Install Snowflake CLI
+      - name: Install Snowflake CLI (3.14.0)
         run: |
           wget https://sfc-repo.snowflakecomputing.com/snowflake-cli/linux_x86_64/3.14.0/snowflake-cli-3.14.0.x86_64.deb
           sudo apt-get update
           sudo apt-get install -y ./snowflake-cli-3.14.0.x86_64.deb
-          # find the installation location and add to PATH if necessary
-          which snowflake || true
-          if ! command -v snowflake &> /dev/null; then
-            echo "Snowflake CLI not found in PATH, adding it."
-            export PATH=$PATH:/usr/local/bin  # Adjust path if necessary
-          fi
+          echo "/usr/bin" >> $GITHUB_PATH
+          echo "/usr/local/bin" >> $GITHUB_PATH
 
-          snowflake --version  # Verify installation
-      
-      - name: Configure Snowflake CLI
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+      - name: Verify Snowflake CLI Installation
         run: |
-          snowflake connection add my_con \
-            --account $SNOWFLAKE_ACCOUNT \
-            --user $SNOWFLAKE_USER \
-            --password $SNOWFLAKE_PASSWORD \
-            --warehouse $SNOWFLAKE_WAREHOUSE \
-            --database $SNOWFLAKE_DATABASE \
-            --schema $SNOWFLAKE_SCHEMA
-            -- non-interactive
-          snowflake connection list  # Verify connection added
-
-          echo "Snowflake CLI installation and configuration completed."
-
-      - name: Test Snowflake CLI Connection
-        run: |
-          snowflake sql "SELECT CURRENT_VERSION();" --connection my_con  # Test connection
-      
-      - name: Clean up
-        run: |
-          rm snowflake-cli-3.14.0.x86_64.deb
-          snowflake connection remove my_con
-          echo "Clean up completed."
+          which snowflake
+          snowflake --version
+      - name: List Snowflake CLI Commands 
+        run: snowflake --help 
           
