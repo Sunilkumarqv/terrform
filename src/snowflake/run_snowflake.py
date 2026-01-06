@@ -35,12 +35,12 @@ with open("src/snowflake/snowflake.sql", "r") as file:
     sql_content = file.read()   
     import re
     cleaned_sql = re.sub(r'/\*.*?\*/', '', sql_content, flags=re.DOTALL)
-    with open("src/snowflake/snowflake_cleaned.sql", "w") as cleaned_file:
+    with open("src/snowflake/run_snowflake.sql", "w") as cleaned_file:
         cleaned_file.write(cleaned_sql)
 print("Comments removed and cleaned SQL file created.")
 
 #reand and execute the cleaned SQL file
-with open("src/snowflake/snowflake_cleaned.sql", "r") as file:
+with open("src/snowflake/run_snowflake.sql", "r") as file:
     sql_commands = file.read() 
     with ctx.cursor() as cs:
         cs.execute(sql_commands)
