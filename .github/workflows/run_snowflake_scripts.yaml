@@ -1,41 +1,37 @@
-name: "Install Snowflake CLI"
+name: Snowflake Version Check
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/run_snowflake_scripts.yaml'
-      - 'src/snowflake/**'
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
-env:
-  working_directory: "src/snowflake"
-  application: "azure_config"
-  environment: "dev"
-
 jobs:
-  install_snowflake_cli:
+  check-version:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout 
-        uses: actions/checkout@v4
+      # Step 1: Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-      - name: Install Snowflake CLI (3.14.0)
-        run: |
-          wget https://sfc-repo.snowflakecomputing.com/snowflake-cli/linux_x86_64/3.14.0/snowflake-cli-3.14.0.x86_64.deb
-          sudo apt-get update
-          sudo apt-get install -y ./snowflake-cli-3.14.0.x86_64.deb
-          echo "/usr/bin" >> $GITHUB_PATH
-          echo "/usr/local/bin" >> $GITHUB_PATH
+      # Step 2: Set up Python
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-      - name: Verify Snowflake CLI Installation
+      # Step 3: Install Snowflake Python connector
+      - name: Install dependencies
         run: |
-          which snowflake
-          snowflake --version
-      - name: List Snowflake CLI Commands 
-        run: snowflake --help 
-          
+          pip install snowflake-connector-python
+
+      # Step 4: Run Snowflake version query
+      - name: Check Snowflake version
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+        run: |
+          python src/snowflake/run_snowflake.py
