@@ -59,7 +59,4 @@ FROM @my_azure_stage
 FILE_FORMAT = (TYPE = PARQUET)
 MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
 ON_ERROR = SKIP_FILE;  -- or CONTINUE
-
-
-//select * from bau_schema.retail_fact
- 
+-- VALIDATION_MODE = RETURN_100_ROWS;
