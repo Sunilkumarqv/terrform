@@ -17,17 +17,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install SnowSQL CLI 1.4.5 (Linux x86_64)
+      - name: Install SnowSQL CLI 1.4.5 (Linux x86_64, non-interactive)
         run: |
           sudo apt-get update
           sudo apt-get install -y wget
-          # Download the latest SnowSQL bash installer for linux_x86_64
           wget https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.4/linux_x86_64/snowsql-1.4.5-linux_x86_64.bash
-          # Run the installer
-          bash snowsql-1.4.5-linux_x86_64.bash
-          # Make SnowSQL available for subsequent steps
+          bash snowsql-1.4.5-linux_x86_64.bash --non-interactive --install-dir $HOME/bin --update-path yes
           echo "$HOME/bin" >> $GITHUB_PATH
-          # Verify installation
           snowsql --version
 
       - name: Run SQL script in Snowflake
