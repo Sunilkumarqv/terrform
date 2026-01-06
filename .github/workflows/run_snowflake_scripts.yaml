@@ -26,28 +26,39 @@ jobs:
 
       - name: Install Snowflake CLI
         run: |
-          curl -o- https://raw.githubusercontent.com/snowflakedb/snowflake-cli/main/install.sh | bash
-
-      - name: Add Snowflake CLI to PATH
-        run: |
-          echo "$HOME/.snowflake/bin" >> $GITHUB_PATH
-
-      - name: Verify Installation
-        run: |
-          snowsql --version
-
-      - name: Confirm Snowflake CLI in PATH
-        run: |
-          which snowsql
-
-      - name: Test Snowflake Connection
+          wget https://sfc-repo.snowflakecomputing.com/snowflake-cli/linux_x86_64/3.14.0/snowflake-cli-3.14.0.x86_64.deb
+          sudo apt-get update
+          sudo apt-get install -y ./snowflake-cli-3.14.0.x86_64.deb
+          snowflake --version  # Verify installation
+      
+      - name: Configure Snowflake CLI
         env:
-          SNOWSQL_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWSQL_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWSQL_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
         run: |
-          snowsql \
-            -a $SNOWSQL_ACCOUNT \
-            -u $SNOWSQL_USER \
-            -p $SNOWSQL_PASSWORD \
-            -q "SELECT CURRENT_VERSION();"
+          snowflake connection add my_con \
+            --account $SNOWFLAKE_ACCOUNT \
+            --user $SNOWFLAKE_USER \
+            --password $SNOWFLAKE_PASSWORD \
+            --warehouse $SNOWFLAKE_WAREHOUSE \
+            --database $SNOWFLAKE_DATABASE \
+            --schema $SNOWFLAKE_SCHEMA
+            -- non-interactive
+          snowflake connection list  # Verify connection added
+
+          echo "Snowflake CLI installation and configuration completed."
+
+      - name: Test Snowflake CLI Connection
+        run: |
+          snowflake sql "SELECT CURRENT_VERSION();" --connection my_con  # Test connection
+      
+      - name: Clean up
+        run: |
+          rm snowflake-cli-3.14.0.x86_64.deb
+          snowflake connection remove my_con
+          echo "Clean up completed."
+          
