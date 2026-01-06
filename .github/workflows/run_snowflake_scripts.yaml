@@ -29,6 +29,13 @@ jobs:
           wget https://sfc-repo.snowflakecomputing.com/snowflake-cli/linux_x86_64/3.14.0/snowflake-cli-3.14.0.x86_64.deb
           sudo apt-get update
           sudo apt-get install -y ./snowflake-cli-3.14.0.x86_64.deb
+          # find the installation location and add to PATH if necessary
+          which snowflake || true
+          if ! command -v snowflake &> /dev/null; then
+            echo "Snowflake CLI not found in PATH, adding it."
+            export PATH=$PATH:/usr/local/bin  # Adjust path if necessary
+          fi
+
           snowflake --version  # Verify installation
       
       - name: Configure Snowflake CLI
