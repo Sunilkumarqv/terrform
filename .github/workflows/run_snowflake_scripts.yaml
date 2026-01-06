@@ -1,70 +1,35 @@
-name: Run Snowflake Script (SnowSQL CLI)
 
+name : "install snowflake CLI"
 on:
-  workflow_dispatch:
   push:
     branches:
       - main
     paths:
-      - 'src/snowflake/**'
       - '.github/workflows/run_snowflake_scripts.yaml'
-
+      - 'src/snowflake/**'
+  pull_request:
+    branches:
+      - main
 jobs:
-  run-snowflake-cli:
+  install_snowflake_cli:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install SnowSQL CLI 1.4.5 (Linux x86_64, non-interactive)
+      - name: Install Snowflake CLI
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget
-          wget https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.4/linux_x86_64/snowsql-1.4.5-linux_x86_64.bash
-          bash snowsql-1.4.5-linux_x86_64.bash --non-interactive --install-dir $HOME/bin --update-path yes
-          echo "$HOME/bin" >> $GITHUB_PATH
-
-      - name: Verify SnowSQL Installation
+          curl -o- https://raw.githubusercontent.com/snowflakedb/snowflake-cli/main/install.sh | bash
+      - name: Verify Installation
         run: |
           snowsql --version
-
-      - name: Test Snowflake Connection
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+      - name: Add Snowflake CLI to PATH
         run: |
-          snowsql \
-            -a $SNOWFLAKE_ACCOUNT \
-            -u $SNOWFLAKE_USER \
-            -p $SNOWFLAKE_PASSWORD \
-            -r $SNOWFLAKE_ROLE \
-            -d $SNOWFLAKE_DATABASE \
-            -s $SNOWFLAKE_SCHEMA \
-            -w $SNOWFLAKE_WAREHOUSE \
-            -q "SELECT CURRENT_VERSION();"
-
-      - name: Run SQL script in Snowflake
-        env:
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
-          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
-          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
-          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          echo "$HOME/.snowflake/bin" >> $GITHUB_PATH
+      - name: Confirm Snowflake CLI in PATH
         run: |
-          snowsql \
-            -a $SNOWFLAKE_ACCOUNT \
-            -u $SNOWFLAKE_USER \
-            -p $SNOWFLAKE_PASSWORD \
-            -r $SNOWFLAKE_ROLE \
-            -d $SNOWFLAKE_DATABASE \
-            -s $SNOWFLAKE_SCHEMA \
-            -w $SNOWFLAKE_WAREHOUSE \
-            -f src/snowflake/retail_copy.sql
+          which snowsql
+      - name: Run a sample Snowflake command
+        env:
+          SNOWSQL_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWSQL_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWSQL_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+        run: |
+          snowsql -a $SNOWSQL_ACCOUNT -u $SNOWSQL_USER -p $SNOWSQL_PASSWORD -q "SELECT CURRENT_VERSION();"  
