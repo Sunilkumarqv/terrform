@@ -26,14 +26,12 @@ try:
     with open("src/snowflake/retail_copy.sql", "r") as sql_file:
         cur = ctx.cursor()
         try:
-            for result in cur.execute_stream(sql_file):
-                try:
-                    data = result.fetchall()
-                    print("Results:", data)
-                except snowflake.connector.errors.ProgrammingError:
-                    pass
+            sql_commands = sql_file.read()
+            cur.execute(sql_commands)
+            print("SQL script executed successfully.")
         finally:
             cur.close()
 finally:
     ctx.close()
     print("Connection closed.")
+    
