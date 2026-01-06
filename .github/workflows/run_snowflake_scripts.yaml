@@ -1,7 +1,7 @@
 name: Run Snowflake Script (SnowSQL CLI)
 
 on:
-  workflow_dispatch:    # Manual trigger
+  workflow_dispatch:
   push:
     branches:
       - main
@@ -24,7 +24,30 @@ jobs:
           wget https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.4/linux_x86_64/snowsql-1.4.5-linux_x86_64.bash
           bash snowsql-1.4.5-linux_x86_64.bash --non-interactive --install-dir $HOME/bin --update-path yes
           echo "$HOME/bin" >> $GITHUB_PATH
+
+      - name: Verify SnowSQL Installation
+        run: |
           snowsql --version
+
+      - name: Test Snowflake Connection
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
+          SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+        run: |
+          snowsql \
+            -a $SNOWFLAKE_ACCOUNT \
+            -u $SNOWFLAKE_USER \
+            -p $SNOWFLAKE_PASSWORD \
+            -r $SNOWFLAKE_ROLE \
+            -d $SNOWFLAKE_DATABASE \
+            -s $SNOWFLAKE_SCHEMA \
+            -w $SNOWFLAKE_WAREHOUSE \
+            -q "SELECT CURRENT_VERSION();"
 
       - name: Run SQL script in Snowflake
         env:
@@ -44,4 +67,4 @@ jobs:
             -d $SNOWFLAKE_DATABASE \
             -s $SNOWFLAKE_SCHEMA \
             -w $SNOWFLAKE_WAREHOUSE \
-            -q "SELECT CURRENT_VERSION();"
+            -f src/snowflake/retail_copy.sql
