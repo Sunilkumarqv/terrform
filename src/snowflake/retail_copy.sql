@@ -1,27 +1,18 @@
-/*set up objects*/
--- CREATE WAREHOUSE bau_wh WITH WAREHOUSE_SIZE='X-LARGE';
--- CREATE ROLE bau_developer_role;
--- CREATE DATABASE bau_bd;
--- CREATE SCHEMA bau_schema;
-
--- /*grant permission*/
--- GRANT CREATE STAGE ON SCHEMA public TO ROLE bau_developer_role;
--- GRANT USAGE ON INTEGRATION azure_integration TO ROLE bau_developer_role;
-
+ 
 use warehouse bau_wh;
 use database bau_bd;
 use schema bau_schema;
 
 /*intergation */
--- CREATE STORAGE INTEGRATION azure_integration
---   TYPE = EXTERNAL_STAGE
---   STORAGE_PROVIDER = 'AZURE'
---   ENABLED = TRUE
---   AZURE_TENANT_ID = 'd9e5da77-5bc4-4c91-9591-a074aaa4a832'
---   STORAGE_ALLOWED_LOCATIONS = ('azure://straccountretail.blob.core.windows.net/silver/', 'azure://straccountretail.blob.core.windows.net/bronze/')
+CREATE or replace STORAGE INTEGRATION azure_integration
+  TYPE = EXTERNAL_STAGE
+  STORAGE_PROVIDER = 'AZURE'
+  ENABLED = TRUE
+  AZURE_TENANT_ID = 'd9e5da77-5bc4-4c91-9591-a074aaa4a832'
+  STORAGE_ALLOWED_LOCATIONS = ('azure://straccountretail.blob.core.windows.net/silver/', 'azure://straccountretail.blob.core.windows.net/bronze/')
 
--- /*check and authenticate*/
--- DESC STORAGE INTEGRATION azure_integration;
+/*check and authenticate*/
+//DESC STORAGE INTEGRATION azure_integration;
 
 
 
@@ -59,4 +50,3 @@ FROM @my_azure_stage
 FILE_FORMAT = (TYPE = PARQUET)
 MATCH_BY_COLUMN_NAME = CASE_INSENSITIVE
 ON_ERROR = SKIP_FILE;  -- or CONTINUE
--- VALIDATION_MODE = RETURN_100_ROWS;
