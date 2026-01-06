@@ -44,4 +44,4 @@ jobs:
             -d $SNOWFLAKE_DATABASE \
             -s $SNOWFLAKE_SCHEMA \
             -w $SNOWFLAKE_WAREHOUSE \
-            -f src/snowflake/retail_copy.sql
+            -q "SELECT CURRENT_VERSION();"
