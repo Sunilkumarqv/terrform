@@ -4,10 +4,10 @@ on:
   workflow_dispatch:    # Manual trigger
   push:
     branches:
-      - main            # Optional: trigger on pushes to main
+      - main
     paths:
-      - 'src/snowflake/**'    # Optional: trigger on changes to scripts folder
-      - '.github/workflows/run_snowflake_scripts.yaml'  # Trigger if this workflow file changes
+      - 'src/snowflake/**'
+      - '.github/workflows/run_snowflake_scripts.yaml'
 
 jobs:
   run-snowflake-cli:
@@ -17,13 +17,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install SnowSQL CLI
+      - name: Install SnowSQL CLI (latest)
         run: |
           sudo apt-get update
           sudo apt-get install -y wget
-          wget https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.2/linux_x86_64/snowsql-1.2.28.tar.gz
-          tar -xzf snowsql-1.2.28.tar.gz
-          sudo ./snowsql-1.2.28/install
+          wget https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/snowsql-install.sh
+          bash snowsql-install.sh
+          export PATH=$PATH:$HOME/bin
 
       - name: Run SQL script in Snowflake
         env:
