@@ -1,60 +1,46 @@
-name : run snowflake scripts
+name: Run Snowflake Script (SnowSQL CLI)
+
 on:
+  workflow_dispatch:    # Manual trigger
   push:
     branches:
-      - main
+      - main            # Optional: trigger on pushes to main
     paths:
-      - 'src/snowflake/**'
-      - '.github/workflows/run_snowflake_scripts.yaml'
-  workflow_dispatch:
+      - 'src/snowflake/**'    # Optional: trigger on changes to scripts folder
+      - '.github/workflows/run_snowflake_scripts.yaml'  # Trigger if this workflow file changes
+
 jobs:
-  run-snowflake-scripts:
+  run-snowflake-cli:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
+      - name: Install SnowSQL CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget
+          wget https://sfc-repo.snowflakecomputing.com/snowsql/bootstrap/1.2/linux_x86_64/snowsql-1.2.28.tar.gz
+          tar -xzf snowsql-1.2.28.tar.gz
+          sudo ./snowsql-1.2.28/install
 
-      - name: Install Snowflake Connector
-        run: pip install snowflake-connector-python
-
-      - name: Run Snowflake Scripts
+      - name: Run SQL script in Snowflake
         env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
           SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
-          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
-          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
           SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
         run: |
-          python - <<'PYCODE'
-          import os
-          import glob
-          import snowflake.connector
-          
-          ctx = snowflake.connector.connect(
-              user=os.getenv('SNOWFLAKE_USER'),
-              password=os.getenv('SNOWFLAKE_PASSWORD'),
-              account=os.getenv('SNOWFLAKE_ACCOUNT'),
-              warehouse=os.getenv('SNOWFLAKE_WAREHOUSE'),
-              database=os.getenv('SNOWFLAKE_DATABASE'),
-              schema=os.getenv('SNOWFLAKE_SCHEMA')
-          )
-          cs = ctx.cursor()
-          try:
-              sql_files = sorted(glob.glob('src/snowflake/**/*.sql', recursive=True))
-              for sql_file in sql_files:
-                  print(f'Executing {sql_file}...')
-                  with open(sql_file, 'r') as file:
-                      sql_script = file.read()
-                      cs.execute(sql_script)
-                      print(f'Successfully executed {sql_file}')
-          finally:
-              cs.close()
-              ctx.close()
-            PYCODE
-            
+          snowsql \
+            -a $SNOWFLAKE_ACCOUNT \
+            -u $SNOWFLAKE_USER \
+            -p $SNOWFLAKE_PASSWORD \
+            -r $SNOWFLAKE_ROLE \
+            -d $SNOWFLAKE_DATABASE \
+            -s $SNOWFLAKE_SCHEMA \
+            -w $SNOWFLAKE_WAREHOUSE \
+            -f src/snowflake/retail_copy.sql
