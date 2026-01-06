@@ -3,6 +3,7 @@ use warehouse bau_wh;
 use database bau_bd;
 use schema bau_schema;
 
+use role bau_developer_role
 /*intergation */
 CREATE or replace STORAGE INTEGRATION azure_integration
   TYPE = EXTERNAL_STAGE
